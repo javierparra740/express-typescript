@@ -1,8 +1,25 @@
 import Server from './server/server';
 import router from './router/router';
 
-const server = Server.init(8080);
+import socketIO = require('socket.io');
+import http = require('http');
+import express = require('express');
+import path = require('path');
+/* Servidor preparado para mandar eventos mediante webSockets */
+const expressServer = Server.init(8080);
+const server = http.createServer(expressServer.app);
+const io = socketIO.listen(server);
 
-server.app.use(router);
+expressServer.app.use(router);
 
-server.start(()=> console.log("Server started"));
+expressServer.app.use(express.static(path.join(__dirname, 'frontend')));
+
+io.on('connection',(socket: SocketIO.Socket) => {
+    console.log('New Socket connected');
+
+    socket.on('data',(data: any) => {
+        io.emit('dataFromServer',{ data });
+    }); 
+}); 
+
+server.listen(8080);
